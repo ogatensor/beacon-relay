@@ -152,3 +152,87 @@ fn system_info() {
     // Print the system total inodes.
     println!("{}", SYSTEM_TOTAL_INODES);
 }
+
+// The function should accept the following arguments:
+// - The address of the server.
+// - The port of the server.
+// - The number of connections to accept.
+// - The number of bytes to read from the socket.
+// - A function that handles the connection.
+// The function should return a vector of the results of the function that handles the connection.
+fn listen_for_connections(address: String, port: String, number_of_connections: u32, number_of_bytes: u32, handler: fn(String) -> String) -> Vec<String> {
+    // Create a vector to hold the results of the function that handles the connection.
+    let mut results: Vec<String> = Vec::new();
+
+    // Create a listener.
+    let listener = TcpListener::bind(format!("{}:{}", address, port)).unwrap();
+
+    // Accept the incoming connections.
+    for stream in listener.incoming() {
+        // Create a thread that handles the connection.
+        thread::Builder::new()
+            .name(format!("handle_connection_{}", results.len()))
+            .spawn(move || {
+                // Create a socket.
+                let mut socket = match stream {
+                    Ok(stream) => stream,
+                    Err(e) => {
+                        println!("Error: {}", e);
+                        return;
+                    }
+                };
+
+                // Read the data from the socket.
+                let mut data = String::new();
+                match socket.read_to_string(&mut data) {
+                    Ok(_) => {
+                        // Print the data.
+                        println!("{}", data);
+
+                        // Call the handler function.
+                        let result = handler(data);
+
+                        // Print the result.
+                        println!("{}", result);
+
+                        // Add the result to the results vector.
+                        results.push(result);
+                    }
+                    Err(e) => {
+                        println!("Error: {}", e);
+                        return;
+                    }
+                };
+            });
+    }
+
+    // Return the results.
+    results
+}
+
+// Write a function that terminates an active socket connection.
+fn terminate_connection(socket: &TcpStream) {
+    // Create a vector to hold the data.
+    let mut data = Vec::new();
+
+    // Read the data from the socket.
+    match socket.read_to_end(&mut data) {
+        Ok(_) => {
+            // Print the data.
+            println!("{}", String::from_utf8(data).unwrap());
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+
+    // Close the socket.
+    match socket.shutdown(Shutdown::Both) {
+        Ok(_) => {
+            println!("Socket closed.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+}
