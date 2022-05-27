@@ -151,6 +151,10 @@ fn system_info() {
     println!("{}", SYSTEM_FREE_INODES);
     // Print the system total inodes.
     println!("{}", SYSTEM_TOTAL_INODES);
+
+    // call send_system_info_data() and pass the current socket.
+    send_system_info_data();
+    
 }
 
 // The function should accept the following arguments:
@@ -235,4 +239,58 @@ fn terminate_connection(socket: &TcpStream) {
             println!("Error: {}", e);
         }
     };
+}
+
+// Send system information data to the server.
+fn send_system_info_data(socket: &TcpStream) {
+    // Create a vector to hold the data.
+    let mut data = Vec::new();
+
+    // Write the system name and version.
+    data.extend_from_slice(SYSTEM_NAME_AND_VERSION.as_bytes());
+    // Write the system architecture.
+    data.extend_from_slice(SYSTEM_ARCHITECTURE.as_bytes());
+    // Write the number of cores.
+    data.extend_from_slice(NUMBER_OF_CORES.as_bytes());
+    // Write the number of logical processors.
+    data.extend_from_slice(NUMBER_OF_LOGICAL_PROCESSORS.as_bytes());
+    // Write the number of physical processors.
+    data.extend_from_slice(NUMBER_OF_PHYSICAL_PROCESSORS.as_bytes());
+    // Write the system uptime.
+    data.extend_from_slice(SYSTEM_UPTIME.as_bytes());
+    // Write the system load.
+    data.extend_from_slice(SYSTEM_LOAD.as_bytes());
+    // Write the system memory.
+    data.extend_from_slice(SYSTEM_MEMORY.as_bytes());
+    // Write the system swap.
+    data.extend_from_slice(SYSTEM_SWAP.as_bytes());
+    // Write the system free disk space.
+    data.extend_from_slice(SYSTEM_FREE_DISK_SPACE.as_bytes());
+    // Write the system total disk space.
+    data.extend_from_slice(SYSTEM_TOTAL_DISK_SPACE.as_bytes());
+    // Write the system free inodes.
+    data.extend_from_slice(SYSTEM_FREE_INODES.as_bytes());
+    // Write the system total inodes.
+    data.extend_from_slice(SYSTEM_TOTAL_INODES.as_bytes());
+
+    // Write the data to the socket.
+    match socket.write(&data) {
+        Ok(_) => {
+            println!("Data sent.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+
+    // Close the socket.
+    match socket.shutdown(Shutdown::Both) {
+        Ok(_) => {
+            println!("Socket closed.");
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+        }
+    };
+
 }
